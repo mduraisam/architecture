@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Lambda vs Kappa vs Delta Architecture</title>
+<style>
+  :root{
+    --ink:#1c1c1a; --sub:#5b5b57; --line:#e2e0d8; --page:#faf9f5; --card:#ffffff;
+
+    --lambda-bg:#eaf6f1; --lambda-line:#a9dcc7; --lambda-strong:#0f6e56; --lambda-deep:#085041;
+    --kappa-bg:#eaf2fb;  --kappa-line:#a7c9ec;  --kappa-strong:#185fa5; --kappa-deep:#0c447c;
+    --delta-bg:#fbeee7;  --delta-line:#eab89e;  --delta-strong:#993c1d; --delta-deep:#712b13;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0; background:var(--page); color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;
+    padding:40px 32px 64px;
+  }
+  .wrap{max-width:1240px; margin:0 auto;}
+  header{text-align:center; margin-bottom:40px;}
+  header h1{font-size:30px; font-weight:700; margin:0 0 8px; letter-spacing:-0.01em;}
+  header p{font-size:15px; color:var(--sub); margin:0;}
+
+  .arch{
+    background:var(--card); border:1px solid var(--line); border-radius:16px;
+    padding:26px 28px 24px; margin-bottom:24px; border-left:8px solid var(--accent);
+  }
+  .arch.lambda{--accent:var(--lambda-strong);}
+  .arch.kappa{--accent:var(--kappa-strong);}
+  .arch.delta{--accent:var(--delta-strong);}
+
+  .arch-head{display:flex; align-items:baseline; gap:14px; margin-bottom:18px; flex-wrap:wrap;}
+  .badge{
+    display:inline-flex; align-items:center; justify-content:center;
+    width:36px; height:36px; border-radius:10px; font-weight:700; font-size:16px;
+    color:#fff; background:var(--accent); flex:none;
+  }
+  .arch-head h2{font-size:20px; margin:0; font-weight:700;}
+  .arch-head .tag{
+    font-size:12px; font-weight:600; padding:4px 10px; border-radius:999px;
+    background:var(--accent); color:#fff; letter-spacing:.02em;
+  }
+  .arch-head .desc{font-size:13.5px; color:var(--sub); margin-left:auto;}
+
+  .flow{display:flex; align-items:stretch; gap:0; overflow-x:auto; padding-bottom:4px;}
+  .col{display:flex; align-items:center; flex:none;}
+  .stack{display:flex; flex-direction:column; gap:10px;}
+  .row{display:flex; align-items:center;}
+
+  .node{
+    background:var(--bgc); border:1px solid var(--ln); border-radius:10px;
+    padding:10px 14px; min-width:108px; text-align:center; flex:none;
+  }
+  .node .t{font-size:13px; font-weight:700; color:var(--dp);}
+  .node .s{font-size:11px; color:var(--dp); opacity:.75; margin-top:2px;}
+
+  .lambda .node{--bgc:var(--lambda-bg); --ln:var(--lambda-line); --dp:var(--lambda-deep);}
+  .kappa .node{--bgc:var(--kappa-bg); --ln:var(--kappa-line); --dp:var(--kappa-deep);}
+  .delta .node{--bgc:var(--delta-bg); --ln:var(--delta-line); --dp:var(--delta-deep);}
+
+  .node.strong{background:var(--accent); border-color:var(--accent);}
+  .node.strong .t, .node.strong .s{color:#fff; opacity:1;}
+
+  .node.source{border-style:dashed; background:var(--card);}
+  .node.source .t{color:var(--ink);} .node.source .s{color:var(--sub); opacity:1;}
+
+  .arrow{
+    width:26px; height:1px; background:var(--ln); position:relative; flex:none; align-self:center;
+  }
+  .arrow::after{
+    content:""; position:absolute; right:-1px; top:50%; transform:translateY(-50%);
+    border:5px solid transparent; border-left-color:var(--ln);
+  }
+  .arrow.deep{background:var(--dp);} .arrow.deep::after{border-left-color:var(--dp);}
+
+  .consumers{
+    border:1px dashed var(--ln); border-radius:10px; padding:10px 14px; flex:none;
+    min-width:150px; background:var(--card);
+  }
+  .consumers .t{font-size:11px; font-weight:700; color:var(--sub); text-transform:uppercase; letter-spacing:.04em; margin-bottom:6px;}
+  .consumers ul{list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:4px;}
+  .consumers li{font-size:12.5px; color:var(--ink); font-weight:500;}
+
+  .lake{
+    border:1.5px dashed var(--delta-strong); border-radius:12px; padding:14px 12px 10px;
+    display:flex; gap:14px; align-items:center; position:relative; margin:0 4px;
+  }
+  .lake-label{
+    position:absolute; top:-11px; left:14px; background:var(--page);
+    font-size:11px; font-weight:700; color:var(--delta-strong); padding:0 6px;
+  }
+  .lake .row{gap:14px;}
+
+  .caption{text-align:center; font-size:13.5px; color:var(--sub); margin-top:8px; line-height:1.6;}
+  .caption b{color:var(--ink);}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>Lambda vs Kappa vs Delta architecture</h1>
+    <p>Three streaming approaches to data — end-to-end flow from source to consumer</p>
+  </header>
+
+  <!-- LAMBDA -->
+  <section class="arch lambda">
+    <div class="arch-head">
+      <span class="badge">&#955;</span>
+      <h2>Lambda</h2>
+      <span class="tag">Batch + speed</span>
+      <span class="desc">Dual-path architecture for low-latency analytics</span>
+    </div>
+    <div class="flow">
+      <div class="col"><div class="node source"><div class="t">Data sources</div><div class="s">DBs, events, logs</div></div></div>
+      <div class="arrow"></div>
+      <div class="col">
+        <div class="stack">
+          <div class="row">
+            <div class="node"><div class="t">Batch layer</div><div class="s">High throughput</div></div>
+            <div class="arrow"></div>
+            <div class="node"><div class="t">Master dataset</div><div class="s">Historical recompute</div></div>
+            <div class="arrow"></div>
+            <div class="node"><div class="t">Batch processing</div><div class="s">Scheduled jobs</div></div>
+            <div class="arrow"></div>
+            <div class="node"><div class="t">Batch views</div><div class="s">Precomputed</div></div>
+          </div>
+          <div class="row">
+            <div class="node"><div class="t">Speed layer</div><div class="s">Low latency</div></div>
+            <div class="arrow"></div>
+            <div class="node"><div class="t">Stream processing</div><div class="s">In-flight events</div></div>
+            <div class="arrow"></div>
+            <div class="node"><div class="t">Real-time views</div><div class="s">Incremental</div></div>
+          </div>
+        </div>
+      </div>
+      <div class="arrow deep"></div>
+      <div class="col"><div class="node strong"><div class="t">Merge + serving</div><div class="s">Combines both views</div></div></div>
+      <div class="arrow deep"></div>
+      <div class="col">
+        <div class="consumers">
+          <div class="t">End consumers</div>
+          <ul><li>Dashboards</li><li>Alerts</li><li>APIs</li></ul>
+        </div>
+      </div>
+    </div>
+    <p class="caption">Two codebases stay in sync to serve one merged view — powerful, but the operational cost is real.</p>
+  </section>
+
+  <!-- KAPPA -->
+  <section class="arch kappa">
+    <div class="arch-head">
+      <span class="badge">&#954;</span>
+      <h2>Kappa</h2>
+      <span class="tag">Single pipeline</span>
+      <span class="desc">Stream-first architecture, one unified processing path</span>
+    </div>
+    <div class="flow">
+      <div class="col"><div class="node source"><div class="t">Data sources</div><div class="s">DBs, events, logs</div></div></div>
+      <div class="arrow"></div>
+      <div class="col"><div class="node"><div class="t">Event log</div><div class="s">Kafka-style, append-only</div></div></div>
+      <div class="arrow"></div>
+      <div class="col"><div class="node"><div class="t">Stream processor</div><div class="s">Reads the log</div></div></div>
+      <div class="arrow deep"></div>
+      <div class="col"><div class="node strong"><div class="t">Materialized views</div><div class="s">Serving database</div></div></div>
+      <div class="arrow deep"></div>
+      <div class="col">
+        <div class="consumers">
+          <div class="t">End consumers</div>
+          <ul><li>BI tool</li><li>Applications</li><li>Monitoring</li></ul>
+        </div>
+      </div>
+    </div>
+    <p class="caption">Reprocessing = replaying the log from an earlier offset through the same code path — no second pipeline to maintain.</p>
+  </section>
+
+  <!-- DELTA -->
+  <section class="arch delta">
+    <div class="arch-head">
+      <span class="badge">&#916;</span>
+      <h2>Delta</h2>
+      <span class="tag">Lakehouse</span>
+      <span class="desc">Unified batch and streaming on one storage layer</span>
+    </div>
+    <div class="flow">
+      <div class="col"><div class="node source"><div class="t">Data sources</div><div class="s">DBs, events, logs</div></div></div>
+      <div class="arrow"></div>
+      <div class="col">
+        <div class="stack">
+          <div class="node"><div class="t">Batch ingestion</div></div>
+          <div class="node"><div class="t">Streaming ingestion</div></div>
+        </div>
+      </div>
+      <div class="arrow"></div>
+      <div class="col">
+        <div class="lake">
+          <span class="lake-label">Delta Lake / lakehouse storage — ACID · schema evolution · time travel</span>
+          <div class="row">
+            <div class="node"><div class="t">Bronze</div><div class="s">Raw</div></div>
+            <div class="arrow"></div>
+            <div class="node"><div class="t">Silver</div><div class="s">Cleaned</div></div>
+            <div class="arrow"></div>
+            <div class="node"><div class="t">Gold</div><div class="s">Business-ready</div></div>
+          </div>
+        </div>
+      </div>
+      <div class="arrow deep"></div>
+      <div class="col"><div class="node strong"><div class="t">Processing</div><div class="s">Spark · SQL · ML</div></div></div>
+      <div class="arrow deep"></div>
+      <div class="col">
+        <div class="consumers">
+          <div class="t">Consumers</div>
+          <ul><li>Analytics</li><li>Machine learning</li><li>Data apps</li></ul>
+        </div>
+      </div>
+    </div>
+    <p class="caption">One copy of the data, progressively refined — batch and streaming jobs read and write the same tables.</p>
+  </section>
+
+  <p class="caption" style="margin-top:8px;">
+    <b>Choose Lambda</b> for dual-path legacy needs &nbsp;·&nbsp;
+    <b>Kappa</b> for streaming simplicity &nbsp;·&nbsp;
+    <b>Delta</b> for modern lakehouse analytics
+  </p>
+</div>
+</body>
+</html>
